@@ -20,8 +20,6 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-from past.builtins import long
-
 __all__ = ["ExposureIdInfo"]
 
 
@@ -59,7 +57,7 @@ class ExposureIdInfo(object):
 
         See the class doc string for an explanation of the arguments.
         """
-        expId = long(expId)
+        expId = int(expId)
         expBits = int(expBits)
         maxBits = int(maxBits)
 
