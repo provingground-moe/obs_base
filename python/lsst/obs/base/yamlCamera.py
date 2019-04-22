@@ -139,6 +139,12 @@ def makeAmpInfoCatalog(ccd):
         else:
             x0, y0 = ix*xRawExtent, iy*yRawExtent
 
+        #
+        # Some CCD controllers change the on-disk order of pixels
+        #
+        controllerFlipX = "controllerFlipXY" in amp and amp["controllerFlipXY"][0]
+        controllerFlipY = "controllerFlipXY" in amp and amp["controllerFlipXY"][1]
+
         rawDataBBox = makeBBoxFromList(amp['rawDataBBox'])  # Photosensitive area
         xDataExtent, yDataExtent = rawDataBBox.getDimensions()
         record.setBBox(afwGeom.BoxI(
@@ -148,20 +154,26 @@ def makeAmpInfoCatalog(ccd):
         rawBBox.shift(afwGeom.ExtentI(x0, y0))
         record.setRawBBox(rawBBox)
 
-        rawDataBBox = makeBBoxFromList(amp['rawDataBBox'])
-        rawDataBBox.shift(afwGeom.ExtentI(x0, y0))
+        def adjustBBox(bbox):
+            """Allow for flips and offsets in the controllers, and offsets into the full Detector"""
+            if controllerFlipX:
+                bbox.flipLR(rawBBox.getWidth())
+            if controllerFlipY:
+                bbox.flipTB(rawBBox.getHeight())
+            bbox.shift(afwGeom.ExtentI(x0, y0))
+
+            return bbox
+
+        rawDataBBox = adjustBBox(makeBBoxFromList(amp['rawDataBBox']))
         record.setRawDataBBox(rawDataBBox)
 
-        rawSerialOverscanBBox = makeBBoxFromList(amp['rawSerialOverscanBBox'])
-        rawSerialOverscanBBox.shift(afwGeom.ExtentI(x0, y0))
+        rawSerialOverscanBBox = adjustBBox(makeBBoxFromList(amp['rawSerialOverscanBBox']))
         record.setRawHorizontalOverscanBBox(rawSerialOverscanBBox)
 
-        rawParallelOverscanBBox = makeBBoxFromList(amp['rawParallelOverscanBBox'])
-        rawParallelOverscanBBox.shift(afwGeom.ExtentI(x0, y0))
+        rawParallelOverscanBBox = adjustBBox(makeBBoxFromList(amp['rawParallelOverscanBBox']))
         record.setRawVerticalOverscanBBox(rawParallelOverscanBBox)
 
-        rawSerialPrescanBBox = makeBBoxFromList(amp['rawSerialPrescanBBox'])
-        rawSerialPrescanBBox.shift(afwGeom.ExtentI(x0, y0))
+        rawSerialPrescanBBox = adjustBBox(makeBBoxFromList(amp['rawSerialPrescanBBox']))
         record.setRawPrescanBBox(rawSerialPrescanBBox)
 
         if perAmpData:
