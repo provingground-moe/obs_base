@@ -1357,3 +1357,23 @@ deepCoadd_mcalmax_deblended_schema:
     storage: FitsCatalogStorage
     python: lsst.afw.table.SourceCatalog
     template: schema/mcalmax-deblended.fits
+measurePhotonTransferCurve_config:
+    description: "Configuration for the photon transfer curve measurement task."
+    persistable: Config
+    python: lsst.cp.pipe.ptc.MeasurePhotonTransferCurveConfig
+    storage: ConfigStorage
+    tables:
+    - raw
+    template: config/measurePhotonTransferCurve.py
+measurePhotonTransferCurve_metadata:
+    description: "Metadata for the photon transfer curve measurement task."
+    persistable: PropertySet
+    storage: YamlStorage
+    python: lsst.daf.base.PropertySet
+    template: measurePhotonTransferCurves_metadata/%(detector)03d.yaml
+measurePhotonTransferCurveDataset:
+    description: "Persisted output data from the MeasurePhotonTransferCurveTask"
+    persistable: ignored
+    python: lsst.cp.pipe.ptc.PtcDataset
+    storage: PickleStorage
+    template: ''
