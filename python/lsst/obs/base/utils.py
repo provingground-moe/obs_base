@@ -20,8 +20,42 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import re
 import lsst.afw.geom as afwGeom
+from lsst.afw.cameraGeom import PIXELS, FIELD_ANGLE
+from lsst.afw.image import RotType
+from lsst.afw.geom.skyWcs import makeSkyWcs
+import re
+
+
+def createInitialSkyWcs(visitInfo, detector, flipX=False):
+    """Create a SkyWcs from the telescope boresight and detector geometry.
+
+    A typical usecase for this is to create the initial WCS for a newly-read
+    raw exposure.
+
+
+    Parameters
+    ----------
+    visitInfo : `lsst.afw.image.VisitInfo`
+        Where to get the telescope boresight and rotator angle from.
+    detector : `lsst.afw.cameraGeom.Detector`
+        Where to get the camera geomtry from.
+    flipX : `bool`
+        If False, +X is along W, if True +X is along E.
+
+    Returns
+    -------
+    skyWcs : `lsst.afw.geom.SkyWcs`
+        The new composed WCS.
+    """
+
+    if visitInfo.getRotType() != RotType.SKY:
+        raise RuntimeError("Cannot handle rotator angle defined on %s", visitInfo.getRotType())
+    orientation = visitInfo.getBoresightRotAngle()
+    boresight = visitInfo.getBoresightRaDec()
+    pixelsToFieldAngle = detector.getTransform(detector.makeCameraSys(PIXELS),
+                                               detector.makeCameraSys(FIELD_ANGLE))
+    return makeSkyWcs(pixelsToFieldAngle, orientation, flipX, boresight)
 
 
 def bboxFromIraf(irafBBoxStr):
