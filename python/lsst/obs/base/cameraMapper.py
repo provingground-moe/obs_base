@@ -1105,20 +1105,21 @@ class CameraMapper(dafPersist.Mapper):
             The standardized Exposure.
         """
         try:
-            item = exposureFromImage(item, dataId, mapper=self, logger=self.log, setVisitInfo=setVisitInfo)
+            exposure = exposureFromImage(item, dataId, mapper=self, logger=self.log,
+                                         setVisitInfo=setVisitInfo)
         except Exception as e:
             self.log.error("Could not turn item=%r into an exposure: %s" % (repr(item), e))
             raise
 
         if mapping.level.lower() == "amp":
-            self._setAmpDetector(item, dataId, trimmed)
+            self._setAmpDetector(exposure, dataId, trimmed)
         elif mapping.level.lower() == "ccd":
-            self._setCcdDetector(item, dataId, trimmed)
+            self._setCcdDetector(exposure, dataId, trimmed)
 
         if filter:
-            self._setFilter(mapping, item, dataId)
+            self._setFilter(mapping, exposure, dataId)
 
-        return item
+        return exposure
 
     def _defectLookup(self, dataId, dateKey='taiObs'):
         """Find the defects for a given CCD.
