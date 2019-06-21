@@ -34,9 +34,9 @@ import lsst.afw.table as afwTable
 from lsst.afw.fits import readMetadata
 import lsst.afw.cameraGeom as afwCameraGeom
 import lsst.log as lsstLog
-import lsst.pex.exceptions as pexExcept
 from .exposureIdInfo import ExposureIdInfo
 from .makeRawVisitInfo import MakeRawVisitInfo
+from .utils import createInitialSkyWcs
 from lsst.utils import getPackageDir
 
 __all__ = ["CameraMapper", "exposureFromImage"]
@@ -1116,6 +1116,8 @@ class CameraMapper(dafPersist.Mapper):
         elif mapping.level.lower() == "ccd":
             self._setCcdDetector(exposure, dataId, trimmed)
 
+        exposure.setWcs(createInitialSkyWcs(exposure.getInfo().getVisitInfo(), exposure.getDetector()))
+
         if filter:
             self._setFilter(mapping, exposure, dataId)
 
@@ -1344,27 +1346,25 @@ def exposureFromImage(image, dataId=None, mapper=None, logger=None, setVisitInfo
     elif isinstance(image, afwImage.DecoratedImage):
         exposure = afwImage.makeExposure(afwImage.makeMaskedImage(image.getImage()))
         metadata = image.getMetadata()
-        try:
-            wcs = afwGeom.makeSkyWcs(metadata, strip=True)
-            exposure.setWcs(wcs)
-        except pexExcept.TypeError as e:
-            # raised on failure to create a wcs (and possibly others)
-            if logger is None:
-                logger = lsstLog.Log.getLogger("CameraMapper")
-            logger.debug("wcs set to None; insufficient information found in metadata to create a valid wcs:"
-                         " %s", e.args[0])
-
+        # Strip the WCS metadata, but do nothing with it (we use visitInfo and Detector to make a WCS later).
+        afwGeom.makeSkyWcs(metadata, strip=True)
+        # try:
+        #     wcs = afwGeom.makeSkyWcs(metadata, strip=True)
+        #     exposure.setWcs(wcs)
+        # except pexExcept.TypeError as e:
+        #     # raised on failure to create a wcs (and possibly others)
+        #     if logger is None:
+        #         logger = lsstLog.Log.getLogger("CameraMapper")
+        #     logger.debug("wcs set to None; missing information found in metadata to create a valid wcs:"
+        #                  " %s", e.args[0])
         exposure.setMetadata(metadata)
     elif isinstance(image, afwImage.Exposure):
-        # Exposure
         exposure = image
         metadata = exposure.getMetadata()
-    else:
-        # Image
+    else:  # Image
         exposure = afwImage.makeExposure(afwImage.makeMaskedImage(image))
-    #
+
     # set VisitInfo if we can
-    #
     if setVisitInfo and exposure.getInfo().getVisitInfo() is None:
         if metadata is not None:
             if mapper is None:
